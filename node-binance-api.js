@@ -14,7 +14,7 @@ let api = function Binance( options = {} ) {
 
     //'use strict'; // eslint-disable-line no-unused-expressions
     let Binance = this; // eslint-disable-line consistent-this
-    
+
     const WebSocket = require( 'ws' );
     const request = require( 'request' );
     const crypto = require( 'crypto' );
@@ -416,6 +416,7 @@ let api = function Binance( options = {} ) {
                 if ( !Binance.options.APISECRET ) return reject( 'Invalid API Secret' );
                 data.timestamp = new Date().getTime() + Binance.info.timeOffset;
                 query = makeQueryString( data );
+                query = query.includes('&signature') ? query.split('&signature')[0] : query;
                 data.signature = crypto.createHmac( 'sha256', Binance.options.APISECRET ).update( query ).digest( 'hex' ); // HMAC hash header
                 opt.url = `${ baseURL }${ url }?${ query }&signature=${ data.signature }`;
             }
@@ -913,7 +914,7 @@ let api = function Binance( options = {} ) {
         } = data.o;
         return { symbol, side, orderType, timeInForce, origAmount, price, avgPrice, orderStatus, lastFilledQty, totalFilledQty, eventType, tradeTime, eventTime };
     };
-    
+
     /**
      * Converts the futures ticker stream data into a friendly object
      * @param {object} data - user data callback data type
@@ -2858,12 +2859,12 @@ let api = function Binance( options = {} ) {
             params.symbol = symbol;
             return promiseRequest( 'v1/aggTrades', params, {base:fapi} );
         },
-        
+
         futuresUserTrades: async ( symbol, params = {} ) => {
             params.symbol = symbol;
             return promiseRequest( 'v1/userTrades', params, {base:fapi, type:'SIGNED'} );
         },
-        
+
         futuresGetDataStream: async ( params = {} ) => {
             //A User Data Stream listenKey is valid for 60 minutes after creation. setInterval
             return promiseRequest( 'v1/listenKey', params, {base:fapi, type:'SIGNED', method:'POST'} );
@@ -2881,7 +2882,7 @@ let api = function Binance( options = {} ) {
             if ( symbol ) params.symbol = symbol;
             return promiseRequest( 'v1/allForceOrders', params, {base:fapi} );
         },
-        
+
         futuresPositionRisk: async ( params = {} ) => {
             return promiseRequest( 'v1/positionRisk', params, {base:fapi, type:'SIGNED'} );
         },
@@ -2917,12 +2918,12 @@ let api = function Binance( options = {} ) {
             params.type = type;
             return promiseRequest( 'v1/positionMargin', params, {base:fapi, method:'POST', type:'SIGNED'} );
         },
-        
+
         futuresPositionMarginHistory: async ( symbol, params = {} ) => {
             params.symbol = symbol;
             return promiseRequest( 'v1/positionMargin/history', params, {base:fapi, type:'SIGNED'} );
         },
-        
+
         futuresIncome: async ( params = {} ) => {
             return promiseRequest( 'v1/income', params, {base:fapi, type:'SIGNED'} );
         },
@@ -2963,9 +2964,9 @@ let api = function Binance( options = {} ) {
         futuresMarketSell: async ( symbol, quantity, params = {} ) => {
             return futuresOrder( 'SELL', symbol, quantity, false, params );
         },
-        
+
         futuresOrder, // side symbol quantity [price] [params]
-        
+
         futuresOrderStatus: async ( symbol, params = {} ) => { // Either orderId or origClientOrderId must be sent
             params.symbol = symbol;
             return promiseRequest( 'v1/order', params, {base:fapi, type:'SIGNED'} );
@@ -2996,7 +2997,7 @@ let api = function Binance( options = {} ) {
         Cancel multiple orders DELETE /fapi/v1/batchOrders
         New Future Account Transfer POST https://api.binance.com/sapi/v1/futures/transfer
         Get Postion Margin Change History (TRADE)
-        
+
         wss://fstream.binance.com/ws/<listenKey>
         Diff. Book Depth Streams (250ms, 100ms, or realtime): <symbol>@depth OR <symbol>@depth@100ms OR <symbol>@depth@0ms
         Partial Book Depth Streams (5, 10, 20): <symbol>@depth<levels> OR <symbol>@depth<levels>@100ms
@@ -3033,7 +3034,7 @@ let api = function Binance( options = {} ) {
                 else return Binance.options.log(`futuresOrder ${side} (${symbol},${quantity},${price})`, response);
             }, 'POST');
         };*/
-          
+
         //** Margin methods */
         /**
          * Creates an order
@@ -3149,7 +3150,7 @@ let api = function Binance( options = {} ) {
                     return callback.call( this, error, data, symbol );
                 } );
             }
-        },      
+        },
 
         /**
          * Gets the status of an order
@@ -3372,7 +3373,7 @@ let api = function Binance( options = {} ) {
             let subscription = futuresSubscribeSingle( endpoint+speed, data => callback( fMarkPriceConvertData( data ) ), { reconnect } );
             return subscription.endpoint;
         },
-        
+
         /**
          * Futures WebSocket liquidations stream
          * @param {symbol} symbol name or false. can also be a callback
